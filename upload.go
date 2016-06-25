@@ -19,7 +19,7 @@ const (
 	LENGTH    = 6
 	PORT      = ":8080"
 	DIRECTORY = "/tmp/"
-	UPADDRESS = "http://localhost/"
+	UPADDRESS = "http://localhost"
 )
 
 type Result struct {
@@ -90,15 +90,16 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			hash := h.Sum(nil)
 			sha1 := base64.URLEncoding.EncodeToString(hash)
-			size := dst.Stat()
+			size, _ := dst.Stat()
 			res := Result{
-				URL:  UPADDRESS + "/" + s,
+				URL:  UPADDRESS + "/" + s + extName,
 				Name: part.FileName(),
 				Hash: sha1,
 				Size: size.Size(),
 			}
 
-			io.WriteString(w, filename+"\n")
+			fmt.Println(res)
+
 		}
 	}
 
