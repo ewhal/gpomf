@@ -30,10 +30,10 @@ type Result struct {
 }
 
 type Response struct {
-	SUCCESS     bool     `json:"success"`
-	ERRORCODE   int      `json:"errorcode,omitempty"`
-	DESCRIPTION string   `json:"description,omitempty"`
-	FILES       []Result `json:"files,omitempty"`
+	Success     bool     `json:"success"`
+	ErrorCode   int      `json:"errorcode,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Files       []Result `json:"files,omitempty"`
 }
 
 func generateName() string {
@@ -48,61 +48,59 @@ func check(err error) {
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "GET":
-		io.WriteString(w, "Error")
-	case "POST":
+	reader, err := r.MultipartReader()
 
-		reader, err := r.MultipartReader()
+	resp := Response{Files: []Result{}}
+	if err != nil {
+		resp.ErrorCode = http.StatusInternalServerError
+		resp.Description = err.Error()
+		resp.Success = false
+		return
+	}
+
+	for {
+		part, err := reader.NextPart()
+		if err == io.EOF {
+			break
+		}
+
+		if part.FileName() == "" {
+			continue
+		}
+		s := generateName()
+		extName := filepath.Ext(part.FileName())
+		filename := s + extName
+		dst, err := os.Create(DIRECTORY + filename)
+		defer dst.Close()
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			resp.ErrorCode = http.StatusInternalServerError
+			resp.Description = err.Error()
 			return
 		}
 
-		for {
-			part, err := reader.NextPart()
-			if err == io.EOF {
-				break
-			}
+		h := sha1.New()
+		t := io.TeeReader(part, h)
+		_, err = io.Copy(dst, t)
 
-			if part.FileName() == "" {
-				continue
-			}
-			s := generateName()
-			extName := filepath.Ext(part.FileName())
-			filename := s + extName
-			dst, err := os.Create(DIRECTORY + filename)
-			defer dst.Close()
-
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			h := sha1.New()
-			t := io.TeeReader(part, h)
-			_, err = io.Copy(dst, t)
-
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			hash := h.Sum(nil)
-			sha1 := base64.URLEncoding.EncodeToString(hash)
-			size, _ := dst.Stat()
-			res := Result{
-				URL:  UPADDRESS + "/" + s + extName,
-				Name: part.FileName(),
-				Hash: sha1,
-				Size: size.Size(),
-			}
-
-			fmt.Println(res)
-
+		if err != nil {
+			resp.ErrorCode = http.StatusInternalServerError
+			resp.Description = err.Error()
+			return
 		}
-	}
+		hash := h.Sum(nil)
+		sha1 := base64.URLEncoding.EncodeToString(hash)
+		size, _ := dst.Stat()
+		res := Result{
+			URL:  UPADDRESS + "/" + s + extName,
+			Name: part.FileName(),
+			Hash: sha1,
+			Size: size.Size(),
+		}
+		resp.Files = append(resp.Files, res)
 
+	}
+	fmt.Println(resp)
 }
 
 func main() {
