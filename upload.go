@@ -4,6 +4,7 @@ import (
 
 	//	"encoding/json"
 	"crypto/sha1"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -18,6 +19,7 @@ const (
 	LENGTH    = 6
 	PORT      = ":8080"
 	DIRECTORY = "/tmp/"
+	UPADDRESS = "http://localhost/"
 )
 
 type Result struct {
@@ -87,6 +89,14 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			hash := h.Sum(nil)
+			sha1 := base64.URLEncoding.EncodeToString(hash)
+			size := dst.Stat()
+			res := Result{
+				URL:  UPADDRESS + "/" + s,
+				Name: part.FileName(),
+				Hash: sha1,
+				Size: size.Size(),
+			}
 
 			io.WriteString(w, filename+"\n")
 		}
