@@ -4,8 +4,9 @@ import (
 	"crypto/sha1"
 	//	"encoding/json"
 	"fmt"
-	"github.com/dchest/uniuri"
 	"io"
+
+	"github.com/dchest/uniuri"
 	//	"mime/multipart"
 	"net/http"
 	"os"
@@ -61,15 +62,39 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		io.WriteString(w, "Error")
 	case "POST":
-		r.ParseMultipartForm(32 << 20)
-		file, handler, err := r.FormFile("files[]")
-		check(err)
-		defer file.Close()
-		fmt.Fprintf(w, "%v", handler.Header)
-		f, err := os.OpenFile("/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
-		check(err)
-		defer f.Close()
-		io.Copy(f, file)
+
+		reader, err := r.MultipartReader()
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		//copy each part to destination.
+		for {
+			part, err := reader.NextPart()
+			if err == io.EOF {
+				break
+			}
+
+			//if part.FileName() is empty, skip this iteration.
+			if part.FileName() == "" {
+				continue
+			}
+			dst, err := os.Create(DIRECTORY + part.FileName())
+			defer dst.Close()
+
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if _, err := io.Copy(dst, part); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			io.WriteString(w, part.FileName()+"\n")
+		}
 	}
 
 }
