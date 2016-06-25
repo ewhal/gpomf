@@ -3,6 +3,7 @@ package main
 import (
 
 	//	"encoding/json"
+	"crypto/sha1"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -19,11 +20,19 @@ const (
 	DIRECTORY = "/tmp/"
 )
 
-//func getHash(file io.Reader) string {
-//	h := sha1.New()
-//	return string(h.Sum(nil))
+type Result struct {
+	URL  string `json:"url"`
+	Name string `json:"name"`
+	Hash string `json:"hash"`
+	Size int64  `jason:"size"`
+}
 
-//}
+type Response struct {
+	SUCCESS     bool     `json:"success"`
+	ERRORCODE   int      `json:"errorcode,omitempty"`
+	DESCRIPTION string   `json:"description,omitempty"`
+	FILES       []Result `json:"files,omitempty"`
+}
 
 func generateName() string {
 	name := uniuri.NewLen(LENGTH)
@@ -69,10 +78,16 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if _, err := io.Copy(dst, part); err != nil {
+			h := sha1.New()
+			t := io.TeeReader(part, h)
+			_, err = io.Copy(dst, t)
+
+			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			hash := h.Sum(nil)
+
 			io.WriteString(w, filename+"\n")
 		}
 	}
