@@ -5,6 +5,7 @@ import (
 	//	"encoding/json"
 	"fmt"
 	"io"
+	"path/filepath"
 
 	"github.com/dchest/uniuri"
 	//	"mime/multipart"
@@ -58,7 +59,9 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			s := generateName()
-			dst, err := os.Create(DIRECTORY + s + ".txt")
+			extName := filepath.Ext(part.FileName())
+			filename := s + extName
+			dst, err := os.Create(DIRECTORY + filename)
 			defer dst.Close()
 
 			if err != nil {
@@ -70,7 +73,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			io.WriteString(w, s+"\n")
+			io.WriteString(w, filename+"\n")
 		}
 	}
 
