@@ -16,10 +16,14 @@ import (
 )
 
 const (
-	LENGTH    = 6
-	PORT      = ":8080"
-	DIRECTORY = "/tmp/"
-	UPADDRESS = "http://localhost"
+	LENGTH     = 6
+	PORT       = ":8080"
+	DIRECTORY  = "/tmp/"
+	UPADDRESS  = "http://localhost"
+	dbUSERNAME = ""
+	dbNAME     = ""
+	dbPASSWORD = ""
+	DATABASE   = dbUSERNAME + ":" + dbPASSWORD + "@/" + dbNAME + "?charset=utf8"
 )
 
 type Result struct {
@@ -38,6 +42,7 @@ type Response struct {
 
 func generateName() string {
 	name := uniuri.NewLen(LENGTH)
+	db, err := db.Open("mysql", DATABSE)
 	return name
 }
 func check(err error) {
