@@ -4,15 +4,20 @@ import (
 
 	//	"encoding/json"
 	"crypto/sha1"
+	"database/sql"
 	"encoding/base64"
 	"fmt"
 	"io"
 	"path/filepath"
-
-	"github.com/dchest/uniuri"
+	//"database/sql"
 	//	"mime/multipart"
 	"net/http"
 	"os"
+	//"encoding/base64"
+	//"encoding/xml"
+
+	"github.com/dchest/uniuri"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 const (
@@ -40,16 +45,26 @@ type Response struct {
 	Files       []Result `json:"files,omitempty"`
 }
 
-func generateName() string {
-	name := uniuri.NewLen(LENGTH)
-	db, err := db.Open("mysql", DATABSE)
-	return name
-}
 func check(err error) {
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+}
+
+func generateName() string {
+	name := uniuri.NewLen(LENGTH)
+	db, err := db.Open("mysql", DATABSE)
+	check(err)
+	query, err := db.Query("select id from pastebin where id=?", name)
+	if err != sql.ErrNoRows {
+		for query.Next() {
+			generateName()
+		}
+	}
+	db.Close()
+
+	return name
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
