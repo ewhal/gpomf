@@ -1,8 +1,6 @@
 package main
 
 import (
-
-	//	"encoding/json"
 	"crypto/sha1"
 	"database/sql"
 	"encoding/base64"
@@ -10,14 +8,11 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"path/filepath"
-	"time"
-
-	//"mime/multipart"
 	"net/http"
 	"os"
-	//"encoding/base64"
-	//"encoding/xml"
+	"path/filepath"
+	"strconv"
+	"time"
 
 	"github.com/dchest/uniuri"
 	_ "github.com/go-sql-driver/mysql"
@@ -69,7 +64,51 @@ func generateName() string {
 
 	return name
 }
+func respond(w http.ResponseWriter, output string, resp Response) {
+	switch output {
+	case "json":
 
+		w.Header().Set("Content-Type", "application/json")
+		err := json.NewEncoder(w).Encode(resp)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	case "xml":
+		x, err := xml.MarshalIndent(resp, "", "  ")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/xml")
+		w.Write(x)
+
+	case "html":
+		w.Header().Set("Content-Type", "text/html")
+		for _, file := range resp.Files {
+			io.WriteString(w, "<a href='"+file.URL+"'>"+file.URL+"</a><br />")
+		}
+
+	case "gyazo", "text":
+		w.Header().Set("Content-Type", "plain/text")
+		for _, file := range resp.Files {
+			io.WriteString(w, file.URL+"\n")
+		}
+
+	case "csv":
+		w.Header().Set("Content-Type", "text/csv")
+		io.WriteString(w, "name, url, hash, size\n")
+		for _, file := range resp.Files {
+			io.WriteString(w, file.Name+","+file.URL+","+file.Hash+","+strconv.FormatInt(file.Size, 10)+"\n")
+		}
+
+	default:
+	}
+
+
+}
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	reader, err := r.MultipartReader()
 
@@ -113,57 +152,24 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		hash := h.Sum(nil)
 		sha1 := base64.URLEncoding.EncodeToString(hash)
-		size, _ := dst.Stat()
+		stat, _ := dst.Stat()
+		size := stat.Size()
+		originalname := part.FileName()
 		db, err := sql.Open("mysql", DATABASE)
 		check(err)
+		smnt, err := db.QueryRow("select hash, originalname, filename, size where hash=?", sha1).Scan(&sha1, &originalname, &filename, )
+		if err != sql.ErrNoRows {
 		query, err := db.Prepare("INSERT into files(hash, originalname, filename, size, date) values(?, ?, ?, ?, ?)")
 		res := Result{
 			URL:  UPADDRESS + "/" + s + extName,
-			Name: part.FileName(),
+			Name: originalname,
 			Hash: sha1,
-			Size: size.Size(),
+			Size: size,
 		}
 		_, err = query.Exec(res.Hash, res.Name, res.Hash, res.Size, time.Now().Format("2016-01-02 15:04:05"))
 		check(err)
 		resp.Files = append(resp.Files, res)
 
-	}
-	output := r.FormValue("output")
-	switch output {
-	case "json":
-
-		w.Header().Set("Content-Type", "application/json")
-		err := json.NewEncoder(w).Encode(resp)
-
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	case "xml":
-		x, err := xml.MarshalIndent(resp, "", "  ")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/xml")
-		w.Write(x)
-
-	case "html":
-		w.Header().Set("Content-Type", "text/html")
-		for _, file := range resp.Files {
-			io.WriteString(w, "<a href='"+file.URL+"'>"+file.URL+"</a><br />")
-		}
-
-	case "gyazo", "text":
-		w.Header().Set("Content-Type", "plain/text")
-		for _, file := range resp.Files {
-			io.WriteString(w, file.URL+"\n")
-		}
-
-	case "csv":
-
-	default:
 	}
 }
 
