@@ -6,6 +6,8 @@ import (
 	"crypto/sha1"
 	"database/sql"
 	"encoding/base64"
+	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -126,7 +128,43 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		resp.Files = append(resp.Files, res)
 
 	}
-	fmt.Println(resp)
+	output := r.FormValue("output")
+	switch output {
+	case "json":
+
+		w.Header().Set("Content-Type", "application/json")
+		err := json.NewEncoder(w).Encode(resp)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	case "xml":
+		x, err := xml.MarshalIndent(resp, "", "  ")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/xml")
+		w.Write(x)
+
+	case "html":
+		w.Header().Set("Content-Type", "text/html")
+		for _, file := range resp.Files {
+			io.WriteString(w, "<a href='"+file.URL+"'>"+file.URL+"</a><br />")
+		}
+
+	case "gyazo", "text":
+		w.Header().Set("Content-Type", "plain/text")
+		for _, file := range resp.Files {
+			io.WriteString(w, file.URL+"\n")
+		}
+
+	case "csv":
+
+	default:
+	}
 }
 
 func main() {
