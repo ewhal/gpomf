@@ -9,8 +9,9 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	//"database/sql"
-	//	"mime/multipart"
+	"time"
+
+	//"mime/multipart"
 	"net/http"
 	"os"
 	//"encoding/base64"
@@ -54,7 +55,7 @@ func check(err error) {
 
 func generateName() string {
 	name := uniuri.NewLen(LENGTH)
-	db, err := db.Open("mysql", DATABSE)
+	db, err := sql.Open("mysql", DATABASE)
 	check(err)
 	query, err := db.Query("select id from pastebin where id=?", name)
 	if err != sql.ErrNoRows {
@@ -111,12 +112,17 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		hash := h.Sum(nil)
 		sha1 := base64.URLEncoding.EncodeToString(hash)
 		size, _ := dst.Stat()
+		db, err := sql.Open("mysql", DATABASE)
+		check(err)
+		query, err := db.Prepare("INSERT into files(hash, originalname, filename, size, date) values(?, ?, ?, ?, ?)")
 		res := Result{
 			URL:  UPADDRESS + "/" + s + extName,
 			Name: part.FileName(),
 			Hash: sha1,
 			Size: size.Size(),
 		}
+		_, err = query.Exec(res.Hash, res.Name, res.Hash, res.Size, time.Now().Format("2016-01-02 15:04:05"))
+		check(err)
 		resp.Files = append(resp.Files, res)
 
 	}
