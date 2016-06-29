@@ -106,6 +106,14 @@ func respond(w http.ResponseWriter, output string, resp Response) {
 		}
 
 	default:
+		w.Header().Set("Content-Type", "application/json")
+		err := json.NewEncoder(w).Encode(resp)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 	}
 
 }
