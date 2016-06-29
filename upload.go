@@ -33,7 +33,7 @@ type Result struct {
 	URL  string `json:"url"`
 	Name string `json:"name"`
 	Hash string `json:"hash"`
-	Size int64  `jason:"size"`
+	Size int64  `json:"size"`
 }
 
 type Response struct {
