@@ -166,7 +166,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		originalname := part.FileName()
 		db, err := sql.Open("mysql", DATABASE)
 		check(err)
-		err = db.QueryRow("select hash, originalname, filename, size where hash=?", sha1).Scan(&sha1, &originalname, &filename)
+		err = db.QueryRow("select originalname, filename, size where hash=?", sha1).Scan(&originalname, &filename, &size)
 		if err != sql.ErrNoRows {
 			query, err := db.Prepare("INSERT into files(hash, originalname, filename, size, date) values(?, ?, ?, ?, ?)")
 			res := Result{
