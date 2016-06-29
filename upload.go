@@ -65,6 +65,12 @@ func generateName() string {
 	return name
 }
 func respond(w http.ResponseWriter, output string, resp Response) {
+	if resp.ErrorCode != 0 {
+		resp.Files = []Result{}
+		resp.Success = false
+	} else {
+		resp.Success = true
+	}
 
 	switch output {
 	case "json":
