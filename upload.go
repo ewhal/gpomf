@@ -54,7 +54,7 @@ func generateName() string {
 	name := uniuri.NewLen(LENGTH)
 	db, err := sql.Open("mysql", DATABASE)
 	check(err)
-	query, err := db.Query("select id from pastebin where id=?", name)
+	query, err := db.Query("select id from files where id=?", name)
 	if err != sql.ErrNoRows {
 		for query.Next() {
 			generateName()
