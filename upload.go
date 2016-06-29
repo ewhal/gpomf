@@ -132,6 +132,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		resp.ErrorCode = http.StatusInternalServerError
 		resp.Description = err.Error()
 		resp.Success = false
+		respond(w, output, resp)
 		return
 	}
 
@@ -153,6 +154,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			resp.ErrorCode = http.StatusInternalServerError
 			resp.Description = err.Error()
+			respond(w, output, resp)
 			return
 		}
 
