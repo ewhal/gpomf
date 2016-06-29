@@ -65,6 +65,7 @@ func generateName() string {
 	return name
 }
 func respond(w http.ResponseWriter, output string, resp Response) {
+
 	switch output {
 	case "json":
 
@@ -106,7 +107,6 @@ func respond(w http.ResponseWriter, output string, resp Response) {
 
 	default:
 	}
-
 
 }
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -157,20 +157,22 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		originalname := part.FileName()
 		db, err := sql.Open("mysql", DATABASE)
 		check(err)
-		smnt, err := db.QueryRow("select hash, originalname, filename, size where hash=?", sha1).Scan(&sha1, &originalname, &filename, )
+		smnt, err := db.QueryRow("select hash, originalname, filename, size where hash=?", sha1).Scan(&sha1, &originalname, &filename)
 		if err != sql.ErrNoRows {
-		query, err := db.Prepare("INSERT into files(hash, originalname, filename, size, date) values(?, ?, ?, ?, ?)")
-		res := Result{
-			URL:  UPADDRESS + "/" + s + extName,
-			Name: originalname,
-			Hash: sha1,
-			Size: size,
-		}
-		_, err = query.Exec(res.Hash, res.Name, res.Hash, res.Size, time.Now().Format("2016-01-02 15:04:05"))
-		check(err)
-		resp.Files = append(resp.Files, res)
+			query, err := db.Prepare("INSERT into files(hash, originalname, filename, size, date) values(?, ?, ?, ?, ?)")
+			res := Result{
+				URL:  UPADDRESS + "/" + s + extName,
+				Name: originalname,
+				Hash: sha1,
+				Size: size,
+			}
+			_, err = query.Exec(res.Hash, res.Name, res.Hash, res.Size, time.Now().Format("2016-01-02 15:04:05"))
+			check(err)
+			resp.Files = append(resp.Files, res)
 
+		}
 	}
+	respond(w, output, resp)
 }
 
 func main() {
