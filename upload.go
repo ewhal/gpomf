@@ -127,16 +127,19 @@ func respond(w http.ResponseWriter, output string, resp Response) {
 func grillHandler(w http.ResponseWriter, r *http.Request) {
 }
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	output := r.FormValue("output")
-	resp := Response{Files: []Result{}}
 	reader, err := r.MultipartReader()
+	resp := Response{Files: []Result{}}
+	output := r.FormValue("output")
 	if err != nil {
 		resp.ErrorCode = http.StatusInternalServerError
 		resp.Description = err.Error()
+		respond(w, output, resp)
 		return
 	}
+
 	db, err := sql.Open("mysql", DATABASE)
 	check(err)
+
 	for {
 		part, err := reader.NextPart()
 		if err == io.EOF {
@@ -157,7 +160,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			resp.ErrorCode = http.StatusInternalServerError
 			resp.Description = err.Error()
 			respond(w, output, resp)
-			return
+			break
 		}
 
 		h := sha1.New()
@@ -168,7 +171,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			resp.ErrorCode = http.StatusInternalServerError
 			resp.Description = err.Error()
 			respond(w, output, resp)
-			return
+			break
 		}
 		hash := h.Sum(nil)
 		sha1 := base64.URLEncoding.EncodeToString(hash)
@@ -177,8 +180,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		if size > MAXSIZE {
 			resp.ErrorCode = http.StatusRequestEntityTooLarge
 			resp.Description = err.Error()
-			respond(w, output, resp)
-			return
+			break
 		}
 
 		originalname := part.FileName()
