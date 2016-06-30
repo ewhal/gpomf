@@ -128,26 +128,27 @@ func grillHandler(w http.ResponseWriter, r *http.Request) {
 }
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	output := r.FormValue("output")
-
 	resp := Response{Files: []Result{}}
-	if err != nil {
-		resp.ErrorCode = http.StatusInternalServerError
-		resp.Description = err.Error()
-		resp.Success = false
-		respond(w, output, resp)
-		return
-	}
 
 	db, err := sql.Open("mysql", DATABASE)
 	check(err)
 	for {
-		reader, err := r.MultipartReader(MAXSIZE)
+		err := r.ParseMultipartForm(MAXSIZE)
 		if err != nil {
 			resp.ErrorCode = http.StatusRequestEntityTooLarge
 			resp.Description = err.Error()
 			respond(w, output, resp)
 			return
 		}
+		reader, err := r.MultipartReader()
+		if err != nil {
+			resp.ErrorCode = http.StatusInternalServerError
+			resp.Description = err.Error()
+			resp.Success = false
+			respond(w, output, resp)
+			return
+		}
+
 		part, err := reader.NextPart()
 		if err == io.EOF {
 			break
