@@ -167,6 +167,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			resp.ErrorCode = http.StatusInternalServerError
 			resp.Description = err.Error()
+			respond(w, output, resp)
 			return
 		}
 		hash := h.Sum(nil)
@@ -177,6 +178,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		err = db.QueryRow("select originalname, filename, size where hash=?", sha1).Scan(&originalname, &filename, &size)
 		if err != sql.ErrNoRows {
 			query, err := db.Prepare("INSERT into files(hash, originalname, filename, size, date) values(?, ?, ?, ?, ?)")
+			check(err)
 			res := Result{
 				URL:  UPADDRESS + "/" + s + extName,
 				Name: originalname,
