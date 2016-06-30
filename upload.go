@@ -180,12 +180,12 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			query, err := db.Prepare("INSERT into files(hash, originalname, filename, size, date) values(?, ?, ?, ?, ?)")
 			check(err)
 			res := Result{
-				URL:  UPADDRESS + "/" + s + extName,
+				URL:  UPADDRESS + "/" + filename,
 				Name: originalname,
 				Hash: sha1,
 				Size: size,
 			}
-			_, err = query.Exec(res.Hash, res.Name, res.Hash, res.Size, time.Now().Format("2016-01-02 15:04:05"))
+			_, err = query.Exec(res.Hash, res.Name, filename, res.Size, time.Now().Format("2016-01-02"))
 			check(err)
 			resp.Files = append(resp.Files, res)
 
