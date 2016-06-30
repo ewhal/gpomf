@@ -123,6 +123,8 @@ func respond(w http.ResponseWriter, output string, resp Response) {
 	}
 
 }
+func grillHandler(w http.ResponseWriter, r *http.Request) {
+}
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	reader, err := r.MultipartReader()
 	output := r.FormValue("output")
@@ -195,6 +197,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/upload.php", uploadHandler)
+	http.HandleFunc("/grill.php", grillHandler)
 	err := http.ListenAndServe(PORT, nil)
 	if err != nil {
 		panic(err)
