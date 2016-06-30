@@ -176,7 +176,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		size := stat.Size()
 		originalname := part.FileName()
 		err = db.QueryRow("select originalname, filename, size from files where hash=?", sha1).Scan(&originalname, &filename, &size)
-		if err != sql.ErrNoRows {
+		if err == sql.ErrNoRows {
 			query, err := db.Prepare("INSERT into files(hash, originalname, filename, size, date) values(?, ?, ?, ?, ?)")
 			check(err)
 			res := Result{
@@ -189,6 +189,14 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			check(err)
 			resp.Files = append(resp.Files, res)
 
+		} else {
+			res := Result{
+				URL:  UPADDRESS + "/" + filename,
+				Name: originalname,
+				Hash: sha1,
+				Size: size,
+			}
+			resp.Files = append(resp.Files, res)
 		}
 	}
 	respond(w, output, resp)
