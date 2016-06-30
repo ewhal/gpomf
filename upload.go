@@ -27,6 +27,7 @@ const (
 	dbNAME     = ""
 	dbPASSWORD = ""
 	DATABASE   = dbUSERNAME + ":" + dbPASSWORD + "@/" + dbNAME + "?charset=utf8"
+	MAXSIZE    = 10 * 1024 * 1024
 )
 
 type Result struct {
@@ -126,7 +127,6 @@ func respond(w http.ResponseWriter, output string, resp Response) {
 func grillHandler(w http.ResponseWriter, r *http.Request) {
 }
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	reader, err := r.MultipartReader()
 	output := r.FormValue("output")
 
 	resp := Response{Files: []Result{}}
@@ -141,6 +141,13 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("mysql", DATABASE)
 	check(err)
 	for {
+		reader, err := r.MultipartReader(MAXSIZE)
+		if err != nil {
+			resp.ErrorCode = http.StatusRequestEntityTooLarge
+			resp.Description = err.Error()
+			respond(w, output, resp)
+			return
+		}
 		part, err := reader.NextPart()
 		if err == io.EOF {
 			break
@@ -149,6 +156,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		if part.FileName() == "" {
 			continue
 		}
+
 		s := generateName()
 		extName := filepath.Ext(part.FileName())
 		filename := s + extName
