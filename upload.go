@@ -8,6 +8,8 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -19,15 +21,16 @@ import (
 )
 
 const (
-	LENGTH     = 6
-	PORT       = ":8080"
-	DIRECTORY  = "/tmp/"
-	UPADDRESS  = "http://localhost"
-	dbUSERNAME = ""
-	dbNAME     = ""
-	dbPASSWORD = ""
-	DATABASE   = dbUSERNAME + ":" + dbPASSWORD + "@/" + dbNAME + "?charset=utf8"
-	MAXSIZE    = 10 * 1024 * 1024
+	LENGTH         = 6
+	PORT           = ":8080"
+	DIRECTORY      = "/tmp/"
+	GRILLDIRECTORY = ""
+	UPADDRESS      = "http://localhost"
+	dbUSERNAME     = ""
+	dbNAME         = ""
+	dbPASSWORD     = ""
+	DATABASE       = dbUSERNAME + ":" + dbPASSWORD + "@/" + dbNAME + "?charset=utf8"
+	MAXSIZE        = 10 * 1024 * 1024
 )
 
 type Result struct {
@@ -125,6 +128,9 @@ func respond(w http.ResponseWriter, output string, resp Response) {
 
 }
 func grillHandler(w http.ResponseWriter, r *http.Request) {
+	kawaii, err := ioutil.ReadDir(GRILLDIRECTORY)
+	check(err)
+	http.Redirect(w, r, GRILLDIRECTORY+kawaii[rand.Intn(len(kawaii))].Name(), 301)
 }
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	reader, err := r.MultipartReader()
