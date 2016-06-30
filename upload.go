@@ -23,8 +23,9 @@ import (
 const (
 	LENGTH         = 6
 	PORT           = ":8080"
-	DIRECTORY      = "/tmp/"
+	UPDIRECTORY    = "/tmp/"
 	GRILLDIRECTORY = ""
+	POMFDIRECTORY  = ""
 	UPADDRESS      = "http://localhost"
 	dbUSERNAME     = ""
 	dbNAME         = ""
@@ -159,7 +160,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		s := generateName()
 		extName := filepath.Ext(part.FileName())
 		filename := s + extName
-		dst, err := os.Create(DIRECTORY + filename)
+		dst, err := os.Create(UPDIRECTORY + filename)
 		defer dst.Close()
 
 		if err != nil {
@@ -211,6 +212,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/upload.php", uploadHandler)
 	http.HandleFunc("/grill.php", grillHandler)
+	http.Handle("/", http.FileServer(http.Dir(POMFDIRECTORY)))
 	err := http.ListenAndServe(PORT, nil)
 	if err != nil {
 		panic(err)
