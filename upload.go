@@ -187,9 +187,8 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			check(err)
 			_, err = query.Exec(res.Hash, res.Name, filename, res.Size, time.Now().Format("2016-01-02"))
 			check(err)
-			resp.Files = append(resp.Files, res)
-
 		}
+		resp.Files = append(resp.Files, res)
 	}
 	respond(w, output, resp)
 }
