@@ -24,8 +24,8 @@ const (
 	LENGTH         = 6
 	PORT           = ":8080"
 	UPDIRECTORY    = "/tmp/"
-	GRILLDIRECTORY = ""
-	POMFDIRECTORY  = ""
+	GRILLDIRECTORY = "pomf/build/imgs"
+	POMFDIRECTORY  = "pomf/build"
 	UPADDRESS      = "http://localhost"
 	dbUSERNAME     = ""
 	dbNAME         = ""
