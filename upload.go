@@ -24,7 +24,7 @@ const (
 	LENGTH         = 6
 	PORT           = ":8080"
 	UPDIRECTORY    = "/tmp/"
-	GRILLDIRECTORY = "pomf/build/img"
+	GRILLDIRECTORY = "pomf/build/img/"
 	POMFDIRECTORY  = "pomf/build"
 	UPADDRESS      = "http://localhost"
 	dbUSERNAME     = ""
@@ -130,11 +130,10 @@ func respond(w http.ResponseWriter, output string, resp Response) {
 }
 func grillHandler(w http.ResponseWriter, r *http.Request) {
 	kawaii, err := ioutil.ReadDir(GRILLDIRECTORY)
-	fmt.Println(kawaii)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	http.Redirect(w, r, GRILLDIRECTORY+kawaii[rand.Intn(len(kawaii))].Name(), http.StatusFound)
+	http.Redirect(w, r, "/img/"+kawaii[rand.Intn(len(kawaii))].Name(), http.StatusFound)
 }
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	reader, err := r.MultipartReader()
@@ -215,7 +214,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/upload.php", uploadHandler)
 	http.HandleFunc("/grill.php", grillHandler)
-	http.Handle("/", http.FileServer(http.Dir(POMFDIRECTORY)))
+	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir(POMFDIRECTORY))))
 	err := http.ListenAndServe(PORT, nil)
 	if err != nil {
 		panic(err)
