@@ -136,9 +136,10 @@ func grillHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/img/"+kawaii[rand.Intn(len(kawaii))].Name(), http.StatusFound)
 }
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	output := r.FormValue("output")
 	reader, err := r.MultipartReader()
 	resp := Response{Files: []Result{}}
-	output := r.FormValue("output")
 	if err != nil {
 		resp.ErrorCode = http.StatusInternalServerError
 		resp.Description = err.Error()
