@@ -21,23 +21,23 @@ import (
 )
 
 const (
-	// Length is used to specify filename length
+	// LENGTH is used to specify filename length
 	LENGTH = 6
-	// port is the port pomf will listen on
+	// PORT is the port pomf will listen on
 	PORT = ":8080"
 	// UPDIRECTORY specifies what directory pomf will upload to
 	UPDIRECTORY = "/tmp/"
-	// Kawaii grill directory
+	// GRILLDIRECTORY directory for Kawaii anime grills
 	GRILLDIRECTORY = "pomf/build/img/"
-	// Static pomf directory
+	// POMFDIRECTORY is the directory for static pomf files
 	POMFDIRECTORY = "pomf/build"
-	// Domain to serve static files from
+	// UPADDRESS Domain to serve static files from
 	UPADDRESS = "http://localhost"
-	// Database username
+	// dbUSERNAME Database username
 	dbUSERNAME = ""
-	// database name
+	// dbNAME database name
 	dbNAME = ""
-	// database password
+	// dbPASSWORD database password
 	dbPASSWORD = ""
 	// DATABASE connection constant
 	DATABASE = dbUSERNAME + ":" + dbPASSWORD + "@/" + dbNAME + "?charset=utf8"
@@ -53,7 +53,7 @@ type Result struct {
 	Size int64  `json:"size"`
 }
 
-// Pomf compatible Response struct
+// Response Pomf compatible Response struct
 type Response struct {
 	Success     bool     `json:"success"`
 	ErrorCode   int      `json:"errorcode,omitempty"`
