@@ -1,3 +1,4 @@
+// Package pomf provides a simple file hosting pomf compatible web application
 package pomf
 
 import (
@@ -20,19 +21,31 @@ import (
 )
 
 const (
-	LENGTH         = 6
-	PORT           = ":8080"
-	UPDIRECTORY    = "/tmp/"
+	// Length is used to specify filename length
+	LENGTH = 6
+	// port is the port pomf will listen on
+	PORT = ":8080"
+	// UPDIRECTORY specifies what directory pomf will upload to
+	UPDIRECTORY = "/tmp/"
+	// Kawaii grill directory
 	GRILLDIRECTORY = "pomf/build/img/"
-	POMFDIRECTORY  = "pomf/build"
-	UPADDRESS      = "http://localhost"
-	dbUSERNAME     = ""
-	dbNAME         = ""
-	dbPASSWORD     = ""
-	DATABASE       = dbUSERNAME + ":" + dbPASSWORD + "@/" + dbNAME + "?charset=utf8"
-	MAXSIZE        = 10 * 1024 * 1024
+	// Static pomf directory
+	POMFDIRECTORY = "pomf/build"
+	// Domain to serve static files from
+	UPADDRESS = "http://localhost"
+	// Database username
+	dbUSERNAME = ""
+	// database name
+	dbNAME = ""
+	// database password
+	dbPASSWORD = ""
+	// DATABASE connection constant
+	DATABASE = dbUSERNAME + ":" + dbPASSWORD + "@/" + dbNAME + "?charset=utf8"
+	// MAXSIZE in bytes
+	MAXSIZE = 10 * 1024 * 1024
 )
 
+// Result information struct
 type Result struct {
 	URL  string `json:"url"`
 	Name string `json:"name"`
@@ -40,6 +53,7 @@ type Result struct {
 	Size int64  `json:"size"`
 }
 
+// Pomf compatible Response struct
 type Response struct {
 	Success     bool     `json:"success"`
 	ErrorCode   int      `json:"errorcode,omitempty"`
@@ -47,6 +61,7 @@ type Response struct {
 	Files       []Result `json:"files,omitempty"`
 }
 
+// generateName returns a random string that isn't in the database
 func generateName() (string, error) {
 	name := uniuri.NewLen(LENGTH)
 	db, err := sql.Open("mysql", DATABASE)
@@ -62,6 +77,8 @@ func generateName() (string, error) {
 
 	return name, nil
 }
+
+// respond
 func respond(w http.ResponseWriter, output string, resp Response) {
 	if resp.ErrorCode != 0 {
 		resp.Files = []Result{}
