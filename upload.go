@@ -53,11 +53,10 @@ func generateName() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	query, err := db.Query("select id from files where id=?", name)
+	var id string
+	err = db.QueryRow("select id from files where id=?", name).Scan(&id)
 	if err != sql.ErrNoRows {
-		for query.Next() {
-			generateName()
-		}
+		generateName()
 	}
 	db.Close()
 
@@ -156,11 +155,15 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		s := generateName()
+		s, err := generateName()
+		if err != nil {
+			resp.ErrorCode = http.StatusInternalServerError
+			resp.Description = err.Error()
+			break
+		}
 		extName := filepath.Ext(part.FileName())
 		filename := s + extName
 		dst, err := os.Create(UPDIRECTORY + filename)
-		defer dst.Close()
 
 		if err != nil {
 			resp.ErrorCode = http.StatusInternalServerError
@@ -168,6 +171,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			respond(w, output, resp)
 			break
 		}
+		defer dst.Close()
 
 		h := sha1.New()
 		t := io.TeeReader(part, h)
