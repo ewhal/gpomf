@@ -1,4 +1,4 @@
-package main
+package pomf
 
 import (
 	"crypto/sha1"
