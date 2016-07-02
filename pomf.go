@@ -78,7 +78,8 @@ func generateName() (string, error) {
 	return name, nil
 }
 
-// respond
+// respond outputs Response struct in user specified formats
+// supported formats are xml, json, text and html
 func respond(w http.ResponseWriter, output string, resp Response) {
 	if resp.ErrorCode != 0 {
 		resp.Files = []Result{}
@@ -139,6 +140,7 @@ func respond(w http.ResponseWriter, output string, resp Response) {
 
 }
 
+// grillHandler randomly selects a kawaii grill
 func grillHandler(w http.ResponseWriter, r *http.Request) {
 	kawaii, err := ioutil.ReadDir(GRILLDIRECTORY)
 	if err != nil {
@@ -147,6 +149,7 @@ func grillHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/img/"+kawaii[rand.Intn(len(kawaii))].Name(), http.StatusFound)
 }
 
+// uploadHandler constructs the response struct
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	output := r.FormValue("output")
