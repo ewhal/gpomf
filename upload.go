@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -48,17 +47,12 @@ type Response struct {
 	Files       []Result `json:"files,omitempty"`
 }
 
-func check(err error) {
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-}
-
-func generateName() string {
+func generateName() (string, error) {
 	name := uniuri.NewLen(LENGTH)
 	db, err := sql.Open("mysql", DATABASE)
-	check(err)
+	if err != nil {
+		return "", err
+	}
 	query, err := db.Query("select id from files where id=?", name)
 	if err != sql.ErrNoRows {
 		for query.Next() {
@@ -67,7 +61,7 @@ func generateName() string {
 	}
 	db.Close()
 
-	return name
+	return name, nil
 }
 func respond(w http.ResponseWriter, output string, resp Response) {
 	if resp.ErrorCode != 0 {
@@ -148,7 +142,9 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	db, err := sql.Open("mysql", DATABASE)
-	check(err)
+	if err != nil {
+		panic(err)
+	}
 
 	for {
 		part, err := reader.NextPart()
@@ -203,9 +199,17 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if err == sql.ErrNoRows {
 			query, err := db.Prepare("INSERT into files(hash, originalname, filename, size, date) values(?, ?, ?, ?, ?)")
-			check(err)
+			if err != nil {
+				resp.ErrorCode = http.StatusInternalServerError
+				resp.Description = err.Error()
+				break
+			}
 			_, err = query.Exec(res.Hash, res.Name, filename, res.Size, time.Now().Format("2016-01-02"))
-			check(err)
+			if err != nil {
+				resp.ErrorCode = http.StatusInternalServerError
+				resp.Description = err.Error()
+				break
+			}
 		}
 		resp.Files = append(resp.Files, res)
 	}
