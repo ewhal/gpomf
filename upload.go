@@ -121,6 +121,7 @@ func respond(w http.ResponseWriter, output string, resp Response) {
 	}
 
 }
+
 func grillHandler(w http.ResponseWriter, r *http.Request) {
 	kawaii, err := ioutil.ReadDir(GRILLDIRECTORY)
 	if err != nil {
@@ -128,6 +129,7 @@ func grillHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, "/img/"+kawaii[rand.Intn(len(kawaii))].Name(), http.StatusFound)
 }
+
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	output := r.FormValue("output")
@@ -142,7 +144,9 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	db, err := sql.Open("mysql", DATABASE)
 	if err != nil {
-		panic(err)
+		resp.ErrorCode = http.StatusInternalServerError
+		resp.Description = err.Error()
+		return
 	}
 
 	for {
