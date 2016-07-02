@@ -191,16 +191,19 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		// generate random filename
 		s, err := generateName()
 		if err != nil {
 			resp.ErrorCode = http.StatusInternalServerError
 			resp.Description = err.Error()
 			break
 		}
+		// get file extension
 		extName := filepath.Ext(part.FileName())
+		// create new filename with random name and extension
 		filename := s + extName
+		// create a new file ready for user to upload to
 		dst, err := os.Create(UPDIRECTORY + filename)
-
 		if err != nil {
 			resp.ErrorCode = http.StatusInternalServerError
 			resp.Description = err.Error()
@@ -209,41 +212,56 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		defer dst.Close()
 
+		// Prepare sha1 hash
 		h := sha1.New()
-		t := io.TeeReader(part, h)
-		_, err = io.Copy(dst, t)
 
+		// async copy uploaded data to be hashed
+		t := io.TeeReader(part, h)
+
+		// save uploaded data to created file
+		_, err = io.Copy(dst, t)
 		if err != nil {
 			resp.ErrorCode = http.StatusInternalServerError
 			resp.Description = err.Error()
 			respond(w, output, resp)
 			break
 		}
+		// hash data
 		hash := h.Sum(nil)
+		// convert data to human readable format
 		sha1 := base64.URLEncoding.EncodeToString(hash)
 		stat, _ := dst.Stat()
+		// get filesize
 		size := stat.Size()
+
+		// check to see if filesize is larger than MAXSIZE
 		if size > MAXSIZE {
 			resp.ErrorCode = http.StatusRequestEntityTooLarge
 			resp.Description = err.Error()
 			break
 		}
 
+		// save original name
 		originalname := part.FileName()
+		// query database to see if file exists
 		err = db.QueryRow("select originalname, filename, size from files where hash=?", sha1).Scan(&originalname, &filename, &size)
+		// prepare Result struct
 		res := Result{
 			URL:  UPADDRESS + "/" + filename,
 			Name: originalname,
 			Hash: sha1,
 			Size: size,
 		}
+		// if file does not exist insert data into the files table
 		if err == sql.ErrNoRows {
+			// prepare statement
 			query, err := db.Prepare("INSERT into files(hash, originalname, filename, size, date) values(?, ?, ?, ?, ?)")
 			if err != nil {
 				resp.ErrorCode = http.StatusInternalServerError
 				resp.Description = err.Error()
 				break
 			}
+			// execute statement with all necessary variables
 			_, err = query.Exec(res.Hash, res.Name, filename, res.Size, time.Now().Format("2016-01-02"))
 			if err != nil {
 				resp.ErrorCode = http.StatusInternalServerError
@@ -251,8 +269,10 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
+		// append file to response struct
 		resp.Files = append(resp.Files, res)
 	}
+	// call repond function
 	respond(w, output, resp)
 }
 
