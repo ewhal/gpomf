@@ -1,0 +1,10 @@
+language: go
+
+go:
+  - tip
+
+install:
+  - go get github.com/dchest/uniuri
+  - go get github.com/go-sql-driver/mysql
+script:
+- make
