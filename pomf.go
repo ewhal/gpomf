@@ -16,7 +16,9 @@ import (
 	"strconv"
 	"time"
 
+	// random string generation package
 	"github.com/dchest/uniuri"
+	// mysql database package
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -63,18 +65,26 @@ type Response struct {
 
 // generateName returns a random string that isn't in the database
 func generateName() (string, error) {
+	// generate a random string
 	name := uniuri.NewLen(LENGTH)
+	// open database connection
 	db, err := sql.Open("mysql", DATABASE)
 	if err != nil {
+		// return error and empty string
 		return "", err
 	}
+
 	var id string
+	// Query database for randomly generated string
 	err = db.QueryRow("select id from files where id=?", name).Scan(&id)
+	// if string doesn't exist call generateName again
 	if err != sql.ErrNoRows {
 		generateName()
 	}
+	// close database connection
 	db.Close()
 
+	// return randomly generated string and no error
 	return name, nil
 }
 
@@ -142,10 +152,12 @@ func respond(w http.ResponseWriter, output string, resp Response) {
 
 // grillHandler randomly selects a kawaii grill
 func grillHandler(w http.ResponseWriter, r *http.Request) {
+	// read kawaii grill directory
 	kawaii, err := ioutil.ReadDir(GRILLDIRECTORY)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+	// redirect to a randomly selected kawaii grill
 	http.Redirect(w, r, "/img/"+kawaii[rand.Intn(len(kawaii))].Name(), http.StatusFound)
 }
 
