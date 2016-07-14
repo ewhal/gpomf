@@ -1,5 +1,5 @@
 // Package pomf provides a simple file hosting pomf compatible web application
-packagep pomf 
+package pomf
 
 import (
 	"crypto/sha1"
