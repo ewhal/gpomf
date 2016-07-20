@@ -1,5 +1,5 @@
 {
-    "Port": ":8080",
+	"Port": ":8080",
 	"Length": 12,
 	"Username": "",
 	"Password": "",
@@ -7,6 +7,6 @@
 	"UpDirectory": "/tmp/",
 	"GrillDirectory": "/tmp/",
 	"PomfDirectory": "/tmp/",
-	"UpAddress": "https://u.pantsu.cat:w
+	"UpAddress": "https://u.pantsu.cat",
 	"MaxSize": 10
 }
