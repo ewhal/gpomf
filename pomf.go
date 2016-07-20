@@ -22,30 +22,33 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-const (
+type Configuration struct {
 	// LENGTH is used to specify filename length
-	LENGTH = 6
+	Length int
 	// PORT is the port pomf will listen on
-	PORT = ":8080"
+	Port string
 	// UPDIRECTORY specifies what directory pomf will upload to
-	UPDIRECTORY = "/tmp/"
+	UpDirectory string
 	// GRILLDIRECTORY directory for Kawaii anime grills
-	GRILLDIRECTORY = "pomf/build/img/"
+	GrillDirectory string
 	// POMFDIRECTORY is the directory for static pomf files
-	POMFDIRECTORY = "pomf/build"
+	PomfDirectory string
 	// UPADDRESS Domain to serve static files from
-	UPADDRESS = "http://localhost"
+	UpAddress string
 	// dbUSERNAME Database username
-	dbUSERNAME = ""
+	Username string
 	// dbNAME database name
-	dbNAME = ""
+	Name string
 	// dbPASSWORD database password
-	dbPASSWORD = ""
-	// DATABASE connection constant
-	DATABASE = dbUSERNAME + ":" + dbPASSWORD + "@/" + dbNAME + "?charset=utf8"
+	Pass string
 	// MAXSIZE in bytes
-	MAXSIZE = 10 * 1024 * 1024
-)
+	MaxSize int
+}
+
+var configuration Configuration
+
+// DATABASE connection constant
+var DATABASE string
 
 // Result information struct
 type Result struct {
@@ -66,7 +69,7 @@ type Response struct {
 // generateName returns a random string that isn't in the database
 func generateName() (string, error) {
 	// generate a random string
-	name := uniuri.NewLen(LENGTH)
+	name := uniuri.NewLen(configuration.Length)
 	// open database connection
 	db, err := sql.Open("mysql", DATABASE)
 	if err != nil {
@@ -153,7 +156,7 @@ func respond(w http.ResponseWriter, output string, resp Response) {
 // grillHandler randomly selects a kawaii grill
 func grillHandler(w http.ResponseWriter, r *http.Request) {
 	// read kawaii grill directory
-	kawaii, err := ioutil.ReadDir(GRILLDIRECTORY)
+	kawaii, err := ioutil.ReadDir(configuration.GrillDirectory)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -203,7 +206,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		// create new filename with random name and extension
 		filename := s + extName
 		// create a new file ready for user to upload to
-		dst, err := os.Create(UPDIRECTORY + filename)
+		dst, err := os.Create(configuration.UpDirectory + filename)
 		if err != nil {
 			resp.ErrorCode = http.StatusInternalServerError
 			resp.Description = err.Error()
@@ -235,7 +238,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		size := stat.Size()
 
 		// check to see if filesize is larger than MAXSIZE
-		if size > MAXSIZE {
+		if size > configuration.MaxSize {
 			resp.ErrorCode = http.StatusRequestEntityTooLarge
 			resp.Description = err.Error()
 			break
@@ -247,7 +250,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		err = db.QueryRow("select originalname, filename, size from files where hash=?", sha1).Scan(&originalname, &filename, &size)
 		// prepare Result struct
 		res := Result{
-			URL:  UPADDRESS + "/" + filename,
+			URL:  configuration.UpAddress + "/" + filename,
 			Name: originalname,
 			Hash: sha1,
 			Size: size,
@@ -277,10 +280,23 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+
+	file, err := os.Open("config.json")
+	if err != nil {
+		panic(err)
+	}
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&configuration)
+	if err != nil {
+		panic(err)
+	}
+
+	DATABASE = configuration.Username + ":" + configuration.Pass + "@/" + configuration.Name + "?charset=utf8"
+
 	http.HandleFunc("/upload.php", uploadHandler)
 	http.HandleFunc("/grill.php", grillHandler)
-	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir(POMFDIRECTORY))))
-	err := http.ListenAndServe(PORT, nil)
+	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir(configuration.PomfDirectory))))
+	err = http.ListenAndServe(configuration.Port, nil)
 	if err != nil {
 		panic(err)
 	}
