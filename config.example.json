@@ -2,7 +2,7 @@
 	"Port": ":8080",
 	"Length": 12,
 	"Username": "",
-	"Password": "",
+	"Pass": "",
 	"Name": "pomf",
 	"UpDirectory": "/tmp/",
 	"GrillDirectory": "/tmp/",
