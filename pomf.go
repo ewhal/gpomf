@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -42,7 +43,7 @@ type Configuration struct {
 	// dbPASSWORD database password
 	Pass string
 	// MAXSIZE in bytes
-	MaxSize int
+	MaxSize int64
 }
 
 var configuration Configuration
@@ -240,9 +241,12 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		// check to see if filesize is larger than MAXSIZE
 		if size > configuration.MaxSize {
 			resp.ErrorCode = http.StatusRequestEntityTooLarge
-			resp.Description = err.Error()
+			resp.Description = "File too large"
 			break
 		}
+		fmt.Println(size)
+		fmt.Println(configuration.MaxSize)
+		fmt.Println(size > configuration.MaxSize)
 
 		// save original name
 		originalname := part.FileName()
@@ -291,6 +295,7 @@ func main() {
 		panic(err)
 	}
 
+	configuration.MaxSize = configuration.MaxSize * 1024 * 1024
 	DATABASE = configuration.Username + ":" + configuration.Pass + "@/" + configuration.Name + "?charset=utf8"
 
 	http.HandleFunc("/upload.php", uploadHandler)
