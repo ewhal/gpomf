@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -98,6 +97,7 @@ func respond(w http.ResponseWriter, output string, resp Response) {
 	if resp.ErrorCode != 0 {
 		resp.Files = []Result{}
 		resp.Success = false
+		w.WriteHeader(resp.ErrorCode)
 	} else {
 		resp.Success = true
 	}
@@ -244,9 +244,6 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			resp.Description = "File too large"
 			break
 		}
-		fmt.Println(size)
-		fmt.Println(configuration.MaxSize)
-		fmt.Println(size > configuration.MaxSize)
 
 		// save original name
 		originalname := part.FileName()
@@ -266,6 +263,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				resp.ErrorCode = http.StatusInternalServerError
 				resp.Description = err.Error()
+				respond(w, output, resp)
 				break
 			}
 			// execute statement with all necessary variables
@@ -273,6 +271,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				resp.ErrorCode = http.StatusInternalServerError
 				resp.Description = err.Error()
+				respond(w, output, resp)
 				break
 			}
 		}
