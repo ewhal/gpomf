@@ -18,8 +18,6 @@ import (
 
 	// random string generation package
 	"github.com/dchest/uniuri"
-	// mysql database package
-	_ "github.com/go-sql-driver/mysql"
 )
 
 type Configuration struct {
@@ -71,7 +69,7 @@ func generateName() (string, error) {
 	// generate a random string
 	name := uniuri.NewLen(configuration.Length)
 	// open database connection
-	db, err := sql.Open("mysql", DATABASE)
+	db, err := sql.Open(dbDriver, DATABASE)
 	if err != nil {
 		// return error and empty string
 		return "", err
@@ -79,7 +77,7 @@ func generateName() (string, error) {
 
 	var id string
 	// Query database for randomly generated string
-	err = db.QueryRow("select id from files where id=?", name).Scan(&id)
+	err = db.QueryRow(makeQuery("select id from files where id=?"), name).Scan(&id)
 	// if string doesn't exist call generateName again
 	if err != sql.ErrNoRows {
 		generateName()
@@ -178,13 +176,12 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := sql.Open("mysql", DATABASE)
+	db, err := sql.Open(dbDriver, DATABASE)
 	if err != nil {
 		resp.ErrorCode = http.StatusInternalServerError
 		resp.Description = err.Error()
 		return
 	}
-
 	for {
 		part, err := reader.NextPart()
 		if err == io.EOF {
@@ -206,6 +203,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		extName := filepath.Ext(part.FileName())
 		// create new filename with random name and extension
 		filename := s + extName
+		uploadedFilename := filename
 		// create a new file ready for user to upload to
 		dst, err := os.Create(configuration.UpDirectory + filename)
 		if err != nil {
@@ -233,11 +231,10 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		// hash data
 		hash := h.Sum(nil)
 		// convert data to human readable format
-		sha1 := base64.URLEncoding.EncodeToString(hash)
+		sh := base64.URLEncoding.EncodeToString(hash)
 		stat, _ := dst.Stat()
 		// get filesize
 		size := stat.Size()
-
 		// check to see if filesize is larger than MAXSIZE
 		if size > configuration.MaxSize {
 			resp.ErrorCode = http.StatusRequestEntityTooLarge
@@ -248,18 +245,18 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		// save original name
 		originalname := part.FileName()
 		// query database to see if file exists
-		err = db.QueryRow("select originalname, filename, size from files where hash=?", sha1).Scan(&originalname, &filename, &size)
+		err = db.QueryRow(makeQuery("select originalname, filename, size from files where hash=?"), sh).Scan(&originalname, &filename, &size)
 		// prepare Result struct
 		res := Result{
 			URL:  configuration.UpAddress + "/" + filename,
 			Name: originalname,
-			Hash: sha1,
+			Hash: sh,
 			Size: size,
 		}
 		// if file does not exist insert data into the files table
 		if err == sql.ErrNoRows {
 			// prepare statement
-			query, err := db.Prepare("INSERT into files(hash, originalname, filename, size, date) values(?, ?, ?, ?, ?)")
+			query, err := db.Prepare(makeQuery("INSERT into files(id, hash, originalname, filename, size, date) values(?, ?, ?, ?, ?, ?)"))
 			if err != nil {
 				resp.ErrorCode = http.StatusInternalServerError
 				resp.Description = err.Error()
@@ -267,13 +264,15 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			// execute statement with all necessary variables
-			_, err = query.Exec(res.Hash, res.Name, filename, res.Size, time.Now().Format("2016-01-02"))
+			_, err = query.Exec(filename, res.Hash, res.Name, filename, res.Size, time.Now().Format("2016-01-02"))
 			if err != nil {
 				resp.ErrorCode = http.StatusInternalServerError
 				resp.Description = err.Error()
 				respond(w, output, resp)
 				break
 			}
+		} else if err == nil {
+			os.Remove(configuration.UpDirectory + uploadedFilename)
 		}
 		// append file to response struct
 		resp.Files = append(resp.Files, res)
@@ -295,7 +294,7 @@ func main() {
 	}
 
 	configuration.MaxSize = configuration.MaxSize * 1024 * 1024
-	DATABASE = configuration.Username + ":" + configuration.Pass + "@/" + configuration.Name + "?charset=utf8"
+	DATABASE = makeURL(configuration)
 
 	http.HandleFunc("/upload.php", uploadHandler)
 	http.HandleFunc("/grill.php", grillHandler)
