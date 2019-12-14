@@ -25,8 +25,8 @@ func makeQuery(q string) (r string) {
 }
 
 func makeURL(conf Configuration) string {
-	if conf.Username == "" && conf.Name == "" && conf.Pass == "" {
-		return "host=/var/run/postgresql"
+	if conf.Username != "" && conf.Name != "" && conf.Pass != "" {
+		return fmt.Sprintf("user=%s dbname=%s password=%s", conf.Username, conf.Name, conf.Pass)
 	}
-	return fmt.Sprintf("user=%s dbname=%s password=%s", conf.Username, conf.Name, conf.Pass)
+	return "host=/var/run/postgresql"
 }
