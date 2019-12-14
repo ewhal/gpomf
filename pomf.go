@@ -18,8 +18,6 @@ import (
 
 	// random string generation package
 	"github.com/dchest/uniuri"
-	// mysql database package
-	_ "github.com/go-sql-driver/mysql"
 )
 
 type Configuration struct {
@@ -71,7 +69,7 @@ func generateName() (string, error) {
 	// generate a random string
 	name := uniuri.NewLen(configuration.Length)
 	// open database connection
-	db, err := sql.Open("mysql", DATABASE)
+	db, err := sql.Open(dbDriver, DATABASE)
 	if err != nil {
 		// return error and empty string
 		return "", err
@@ -178,7 +176,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := sql.Open("mysql", DATABASE)
+	db, err := sql.Open(dbDriver, DATABASE)
 	if err != nil {
 		resp.ErrorCode = http.StatusInternalServerError
 		resp.Description = err.Error()
@@ -295,7 +293,7 @@ func main() {
 	}
 
 	configuration.MaxSize = configuration.MaxSize * 1024 * 1024
-	DATABASE = configuration.Username + ":" + configuration.Pass + "@/" + configuration.Name + "?charset=utf8"
+	DATABASE = makeURL(configuration)
 
 	http.HandleFunc("/upload.php", uploadHandler)
 	http.HandleFunc("/grill.php", grillHandler)
