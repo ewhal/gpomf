@@ -14,7 +14,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	// random string generation package
 	"github.com/dchest/uniuri"
@@ -264,7 +263,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			// execute statement with all necessary variables
-			_, err = query.Exec(filename, res.Hash, res.Name, filename, res.Size, time.Now().Format("2016-01-02"))
+			_, err = query.Exec(filename, res.Hash, res.Name, filename, res.Size, makeTime())
 			if err != nil {
 				resp.ErrorCode = http.StatusInternalServerError
 				resp.Description = err.Error()
