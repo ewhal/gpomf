@@ -6,6 +6,7 @@ import (
 	"fmt"
 	_ "github.com/lib/pq"
 	"strings"
+	"time"
 )
 
 const dbDriver = "postgres"
@@ -29,4 +30,8 @@ func makeURL(conf Configuration) string {
 		return fmt.Sprintf("user=%s dbname=%s password=%s", conf.Username, conf.Name, conf.Pass)
 	}
 	return "host=/var/run/postgresql"
+}
+
+func makeTime() int64 {
+	return time.Now().UnixNano()
 }

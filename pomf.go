@@ -14,7 +14,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	// random string generation package
 	"github.com/dchest/uniuri"
@@ -62,6 +61,7 @@ type Response struct {
 	ErrorCode   int      `json:"errorcode,omitempty"`
 	Description string   `json:"description,omitempty"`
 	Files       []Result `json:"files,omitempty"`
+	sent        bool
 }
 
 // generateName returns a random string that isn't in the database
@@ -91,13 +91,20 @@ func generateName() (string, error) {
 
 // respond outputs Response struct in user specified formats
 // supported formats are xml, json, text and html
-func respond(w http.ResponseWriter, output string, resp Response) {
+func respond(w http.ResponseWriter, output string, resp *Response) {
+	resp.sent = true
 	if resp.ErrorCode != 0 {
 		resp.Files = []Result{}
 		resp.Success = false
 		w.WriteHeader(resp.ErrorCode)
+		io.WriteString(w, resp.Description)
+		return
 	} else {
 		resp.Success = true
+	}
+	if resp.sent {
+		// bail we already sent shit back
+		return
 	}
 
 	switch output {
@@ -168,7 +175,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	output := r.FormValue("output")
 	reader, err := r.MultipartReader()
-	resp := Response{Files: []Result{}}
+	resp := &Response{Files: []Result{}}
 	if err != nil {
 		resp.ErrorCode = http.StatusInternalServerError
 		resp.Description = err.Error()
@@ -264,7 +271,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			// execute statement with all necessary variables
-			_, err = query.Exec(filename, res.Hash, res.Name, filename, res.Size, time.Now().Format("2016-01-02"))
+			_, err = query.Exec(filename, res.Hash, res.Name, filename, res.Size, makeTime())
 			if err != nil {
 				resp.ErrorCode = http.StatusInternalServerError
 				resp.Description = err.Error()
